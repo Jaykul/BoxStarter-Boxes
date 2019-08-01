@@ -14,6 +14,11 @@ if (Get-Command code-insiders -ErrorAction Ignore) {
     git config --global core.editor = code-insiders --wait
 }
 
+# Configure git to use plink so that keys from KeeAgent work
+# Some day soon, I should try switching this to the Windows OpenSSH
+$plink = Get-Command plink | convert-path
+[System.Environment]::SetEnvironmentVariable("GIT_SSH", $plink, "User")
+
 <##### TODO: git clone the core work projects ...
 cd ~\Projects\Modules
 git clone
