@@ -34,3 +34,24 @@ filter UpdateModule {
         -not ( Get-Module -FullyQualifiedName @{ ModuleName = $_.Name; ModuleVersion = $_.Version } -ListAvailable )
     } | Install-Module -SkipPublisherCheck -AllowClobber -RequiredVersion { $_.Version }
 }
+
+function Finalize {
+    [CmdletBinding()]param()
+    $CallStack = Get-PSCallStack
+    # CallStack[0] - this function
+    # CallStack[n-1] - one of the ReadMe scripts, or the prompt
+    # CallStack[n] - one of the ReadMe scripts, or the prompt
+    # Thus, if the callstack is only 3 deep, we can run Finalize
+    if ($CallStack.Count -le 3) {
+        Enable-MicrosoftUpdate
+        Install-WindowsUpdate -AcceptEula
+        Enable-RemoteDesktop
+
+        # Set-StartScreenOptions -EnableBootToDesktop -EnableDesktopBackgroundOnStart -EnableShowStartOnActiveScreen
+
+        # This doesn't seem to work anymore
+        # Install-ChocolateyPinnedTaskBarItem "${env:ProgramFiles}\Mozilla Firefox\firefox.exe"
+        # Install-ChocolateyPinnedTaskBarItem (gcm code, code-insiders -ErrorAction SilentlyContinue | split-path | Split-Path | ls  -Filter Code*.exe | convert-path)
+
+    }
+}

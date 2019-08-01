@@ -1,4 +1,5 @@
-Import-Module (Join-Path $PSScriptRoot PoshBox.psm1)
+TZUTIL /s "Eastern Standard Time"
+Import-Module (Join-Path $PSScriptRoot ..\PoshBox.psm1) -Force
 
 & (Join-Path $PSScriptRoot 01_PowerShellSettings.ps1)
 & (Join-Path $PSScriptRoot 02_ExplorerSettings.ps1)
@@ -6,9 +7,4 @@ Import-Module (Join-Path $PSScriptRoot PoshBox.psm1)
 & (Join-Path $PSScriptRoot 04_CommonUtilities.ps1)
 & (Join-Path $PSScriptRoot 05_Browsers.ps1)
 
-@(
-    "PackageManagement"
-    "PowerShellGet"
-) | UpdateModule
-
-TZUTIL /s "Eastern Standard Time"
+Finalize

@@ -1,3 +1,6 @@
+Import-Module (Join-Path $PSScriptRoot ..\PoshBox.psm1) -Force
+& (Join-Path $PSScriptRoot ..\20_PoshDevBox\20_ReadMe.ps1)
+
 mkdir ~\Projects -Force
 mkdir ~\Projects\Platform -Force
 mkdir ~\Projects\Modules -Force
@@ -19,6 +22,7 @@ if (Get-Command code-insiders -ErrorAction Ignore) {
 $plink = Get-Command plink | convert-path
 [System.Environment]::SetEnvironmentVariable("GIT_SSH", $plink, "User")
 
+
 <##### TODO: git clone the core work projects ...
 cd ~\Projects\Modules
 git clone
@@ -29,3 +33,5 @@ cd ~\Projects\Platform
 <##### TODO: copy down my profile and projects from azure
 Set-BingWallpaper
 #>
+
+Finalize
