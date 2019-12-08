@@ -43,6 +43,7 @@ function Finalize {
     # CallStack[n] - one of the ReadMe scripts, or the prompt
     # Thus, if the callstack is only 3 deep, we can run Finalize
     if ($CallStack.Count -le 3) {
+        Enable-PSRemoting
         Enable-MicrosoftUpdate
         Install-WindowsUpdate -AcceptEula
         Enable-RemoteDesktop

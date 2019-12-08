@@ -4,6 +4,6 @@ if (Test-PendingReboot) {
     Write-Warning "Rebooting for docker dependency on containers"
     Invoke-Reboot
 }
-choco upgrade -y docker-for-windows
+choco upgrade -y docker-desktop
 
 InstallCodeExtension "ms-azuretools.vscode-docker"

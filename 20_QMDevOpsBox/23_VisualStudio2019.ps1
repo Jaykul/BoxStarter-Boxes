@@ -13,6 +13,7 @@ if (Test-PendingReboot) {
 }
 
 choco upgrade -y visualstudio2019enterprise
-choco upgrade -y visualstudio2019-workload-netweb 
+choco upgrade -y visualstudio2019-workload-netweb
 choco upgrade -y visualstudio2019-workload-netcrossplat
-choco upgrade -y visualstudio2019-workload-azure 
+choco upgrade -y visualstudio2019-workload-azure
+choco upgrade -y visualstudio2019-workload-nativedesktop
