@@ -1,7 +1,12 @@
-Install-Module Pansies -AllowPrerelease -AllowClobber
-Install-Module PowerLine -AllowPrerelease -AllowClobber
+choco upgrade -y powershell-core
+choco upgrade -y powershell-preview
 
-Install-Module MSTerminalSettings -AllowPrerelease
+@(
+    "Pansies"
+    "PowerLine"
+    "MSTerminalSettings"
+) | UpdateModule
+
 Get-MSTerminalProfile | Set-MSTerminalProfile -FontFace "Cascadia Code PL"
 
 Set-PowerLinePrompt -SetCurrentDirectory -PowerLineFont -FullColor -Timestamp -Newline -Save
