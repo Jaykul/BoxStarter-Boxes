@@ -1,0 +1,20 @@
+[CmdletBinding()]
+param (
+    # Where to install tools, or at least, symlinks to them
+    $UserLocalBinFolder = $(if($IsLinux){ "/usr/local/bin" } else { Join-Path $Env:LocalAppData Programs }),
+
+    # Which WSL distro to install
+    $WslDistro = "ubuntu",
+
+    # Large, or Extra Large? If you set this you get dev-mode and insider builds of all the things
+    [switch]$Insider
+)
+
+& (Join-Path $PSScriptRoot ..\0*\Install.ps1) @PSBoundParameters
+
+# I'm giving in to the easy way. This way it's easier to customize by deleting the files you don't want
+foreach($file in Get-ChildItem $PSScriptRoot -Filter *.ps1 -Exclude Install.ps1) {
+    & $file.FullName
+}
+
+Finalize
