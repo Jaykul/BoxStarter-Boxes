@@ -4,8 +4,9 @@ filter RemoveAppX {
         [Parameter(Mandatory,ValueFromPipeline)]
         [string]$appName
     )
+    $ErrorActionPreference = "SilentlyContinue"
     Write-Information "Trying to remove $appName" -InformationAction Continue
-    Get-AppxPackage $appName -AllUsers | Remove-AppxPackage
+    Get-AppxPackage $appName -AllUsers | Remove-AppxPackage -AllUsers
     Get-AppXProvisionedPackage -Online | Where DisplayName -like $appName | Remove-AppxProvisionedPackage -Online
 }
 
