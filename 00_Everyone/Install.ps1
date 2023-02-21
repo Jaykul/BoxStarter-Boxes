@@ -1,4 +1,4 @@
-Set-ExecutionPolicy RemoteSigned
+Update-ExecutionPolicy RemoteSigned
 
 # Eventually PSResource will be the default, and it's faster, so we'll use it, but only if it's already here
 if (Get-Command Install-PSResource -ErrorAction Ignore) {
