@@ -1,4 +1,4 @@
-# A quick way to get a new Windows machine set up the way I like it
+# Quickly set up a new Windows machine the way I like it
 
 The Easy Mode, Windows-only way to run this repo is through [BoxStarter](https://boxstarter.org/). You can point boxstarter at the Install.ps1 file in this repo and it will install everything -- or you can point it at the "Install.ps1" file in any of the numbered folders to install that folder and everything lower that that.
 
