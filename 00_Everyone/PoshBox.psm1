@@ -121,6 +121,7 @@ function Install-WslDistro {
             }
             $true
         })]
+        [Parameter(Position=0)]
         $Distro = "ubuntu",
 
         # The default user for this distro (by default, your user name, but all in lowercase)

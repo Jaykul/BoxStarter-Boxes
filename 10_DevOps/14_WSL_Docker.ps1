@@ -14,7 +14,7 @@ wsl --update
 if (!$WslDistro) { $WslDistro = "Ubuntu" }
 if ((wsl --list -q) -notcontains $WslDistro) {
     # NOTE: This triggers the "Insecure" parameter set, and we up with no password
-    Install-WslDistro $WslDistro -Username $Env:USERNAME.ToLower() -Default
+    Install-WslDistro -Distro $WslDistro -Username $Env:USERNAME.ToLower() -Default
 }
 
 # Update everything on the default distro
