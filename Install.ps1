@@ -50,7 +50,13 @@ if ($PSScriptRoot -and -not $Boxstarter) {
 
     choco upgrade -y git.install --package-parameters="'/GitOnlyOnPath /WindowsTerminal /NoShellIntegration /SChannel'"
     Write-Host "Cloning BoxStarter-Boxes"
-    git clone https://github.com/Jaykul/BoxStarter-Boxes.git Boxes
+    $ErrorActionPreference, $oldErrorAction = 'Continue', $ErrorActionPreference
+    git clone https://github.com/Jaykul/BoxStarter-Boxes.git Boxes 2>&1 | Out-Host
+    $ErrorActionPreference = $oldErrorAction
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Failed to clone BoxStarter-Boxes"
+        exit 1
+    }
 
     & (Convert-Path Boxes\5*\Install.ps1) @PSBoundParameters
 
