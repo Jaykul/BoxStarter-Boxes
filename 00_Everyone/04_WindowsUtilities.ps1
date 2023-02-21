@@ -1,7 +1,7 @@
 # Over the years, Microsoft has added built-in screenshot and clipbard tools ...
 # They are not as good as the ones I use, but I won't force my preferences on "everyone"
 choco upgrade -y pwsh --install-arguments='"ADD_EXPLORER_CONTEXT_MENU_OPENPOWERSHELL=1 REGISTER_MANIFEST=1 ENABLE_PSREMOTING=1"'
-pwsh (Join-Path $PSScriptRoot ..\PoshBox\01_PowerShellSettings.ps1)
+pwsh -c "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned"
 
 # Everyone definitely needs a better archiver...
 # choco upgrade -y 7zip.install
