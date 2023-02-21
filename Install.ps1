@@ -50,12 +50,44 @@ if ($PSScriptRoot -and -not $Boxstarter) {
 
     choco upgrade -y git.install --package-parameters="'/GitOnlyOnPath /WindowsTerminal /NoShellIntegration /SChannel'"
     Write-Host "Cloning BoxStarter-Boxes"
-    $ErrorActionPreference, $oldErrorAction = 'Continue', $ErrorActionPreference
-    git clone https://github.com/Jaykul/BoxStarter-Boxes.git Boxes 2>&1 | Out-Host
-    $ErrorActionPreference = $oldErrorAction
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Failed to clone BoxStarter-Boxes"
-        exit 1
+
+    & { # Git sucks:
+        $fatal = @();
+        $outputStream = ""
+        $outputMessage = @()
+        $ErrorActionPreference, $oldErrorAction = 'Continue', $ErrorActionPreference
+        $Output = git clone https://github.com/Jaykul/BoxStarter-Boxes.git Boxes 2>&1 | Out-Host
+        $ErrorActionPreference = $oldErrorAction
+        # This empty error record causes an extra iteration to flush the output
+        switch (@($Output) + ([System.Management.Automation.ErrorRecord]::new([Exception]::new(""), "NotAnError", "NotSpecified", $null))) {
+            { $_ -is [System.Management.Automation.ErrorRecord] } {
+                # git writes "fatal" (Terminating), "error" (non-terminating), "warning", and verbose output to stderr.
+                # We output them as they come in, but we save "fatal" for the end because it ends the command
+                $null = $_.Exception.Message -match "^((?<stream>fatal|error|warning):)?\s*(?<message>.*)$"
+                $message = $Matches["message"]
+                $stream = if ($Matches["stream"]) { $Matches["stream"] } else { "Verbose" }
+                # If this is the same stream as the last one, then append the output
+                if ($outputStream -eq $stream -and $message.Length) {
+                    $outputMessage = @($outputMessage) + $message
+                } else {
+                    # Otherwise, if we've captured output, write the output and start anew
+                    if ($outputMessage) {
+                        if ($outputStream -eq "fatal") {
+                            $fatal = @($fatal) + $outputMessage
+                        } else {
+                            . "Write-$outputStream" ($outputMessage.ForEach("Trim") -Join "`n") -ErrorAction $ErrorActionPreference -Verbose:$($VerbosePreference -notin "Ignore", "SilentlyContinue")
+                        }
+                    }
+                    $outputMessage = @($message)
+                }
+                $outputStream = $stream
+            }
+            default { $_ } # Normal output just passes through
+        }
+        if ($fatal -or $LASTEXITCODE -ne 0) {
+            Write-Error "LASTEXITCODE: $LASTEXITCODE. Failed to clone BoxStarter-Boxes. $fatal"
+            exit 1
+        }
     }
 
     & (Convert-Path Boxes\5*\Install.ps1) @PSBoundParameters
