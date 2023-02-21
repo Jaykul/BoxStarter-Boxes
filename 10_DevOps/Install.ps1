@@ -37,7 +37,7 @@ if ($Boxstarter -and (Convert-Path (Join-Path "$PSScriptRoot\" ..\[015]*\Install
                 $null = $_.Exception.Message -match "^((?<stream>fatal|error|warning):)?\s*(?<message>.*)$"
                 $message = $Matches["message"]
                 $stream = if ($Matches["stream"]) { $Matches["stream"] } else { "Verbose" }
-                Write-Host "$([char]27)[38;2;255;0;0m$([char]27)[48;2;255;255;255m $stream $([char]27)[38;2;255;255;255m$([char]27)[49m $message"
+                # Write-Host "$([char]27)[38;2;255;0;0m$([char]27)[48;2;255;255;255m $stream $([char]27)[38;2;255;255;255m$([char]27)[49m $message"
                 # If this is the same stream as the last one, then append the output
                 if ($outputStream -eq $stream -and $message.Length) {
                     $outputMessage = @($outputMessage) + $message
