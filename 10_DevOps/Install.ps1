@@ -57,11 +57,12 @@ if ($Boxstarter -and (Convert-Path (Join-Path "$PSScriptRoot\" ..\[015]*\Install
             exit 1
         }
     }
-    Set-Location Boxes
+    Set-Location Boxes\10_DevOps
 }
 
-
 & (Join-Path $PSScriptRoot ..\0*\Install.ps1) @PSBoundParameters
+
+Write-Host "=== DEVOPS ==="
 
 # I'm giving in to the easy way. This way it's easier to customize by deleting the files you don't want
 foreach($file in Get-ChildItem $PSScriptRoot -Filter *.ps1 -Exclude Install.ps1) {

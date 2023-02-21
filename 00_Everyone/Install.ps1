@@ -1,5 +1,7 @@
 Update-ExecutionPolicy RemoteSigned
 
+Write-Host "=== EVERYONE ==="
+
 # Eventually PSResource will be the default, and it's faster, so we'll use it, but only if it's already here
 if (Get-Command Install-PSResource -ErrorAction Ignore) {
     Set-PSResourceRepository -Name PSGallery -Trusted
@@ -42,6 +44,8 @@ if ($IsLinux -or $IsMacOs) {
 TZUTIL /s "Eastern Standard Time"
 
 Import-Module (Join-Path $PSScriptRoot PoshBox.psm1) -Force -Scope Global
+
+Write-Host "=== EVERYONE ==="
 
 # I'm giving in to the easy way. This way it's easier to customize by deleting the files you don't want
 foreach($file in Get-ChildItem $PSScriptRoot -Filter *.ps1 -Exclude Install.ps1) {
