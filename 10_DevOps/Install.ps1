@@ -1,3 +1,7 @@
+<#
+    .SYNOPSIS
+        Installs VS Code and (Azure) DevOps tools
+#>
 [CmdletBinding()]
 param (
     # Where to install tools, or at least, symlinks to them
@@ -6,8 +10,8 @@ param (
     # Which WSL distro to install
     $WslDistro = "ubuntu",
 
-    # Large, or Extra Large? If you set this you get dev-mode and insider builds of all the things
-    [switch]$Insider
+    # Large, or Extra Large? If you don't set this you get dev-mode and insider builds of all the things
+    [switch]$Release
 )
 Push-Location
 

@@ -1,6 +1,6 @@
 ## I pin the browsers because they self-update anyway, so I want choco to ignore them
 ## These are the two that I'm willing to use
-if ($Insider) {
+if (!$Release) {
     choco upgrade -y microsoft-edge-insider-dev --pin
 }
 choco upgrade -y firefox --pin

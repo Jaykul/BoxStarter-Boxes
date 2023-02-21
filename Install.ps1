@@ -1,6 +1,6 @@
 <#
     .SYNOPSIS
-        Install a simple tools binary from a github release
+        Installs all my favorite tools on Windows
 #>
 [CmdletBinding()]
 param (
@@ -10,11 +10,9 @@ param (
     # Which WSL distro to install
     $WslDistro = "ubuntu",
 
-    # Large, or Extra Large? If you set this you get dev-mode and insider builds of all the things
+    # Large, or Extra Large? If you don't set this you get dev-mode and insider builds of all the things
     [switch]$Release
 )
-
-$PSBoundParameters["Insider"] = $Insider = !$Release
 
 Set-StrictMode -off
 $ErrorActionPreference = 'Stop'
