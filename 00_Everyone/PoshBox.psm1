@@ -80,7 +80,7 @@ function Add-WslUser {
     [CmdletBinding()]
     param(
         # The distro to add the user to
-        [ValidateSscript({
+        [ValidateScript({
             if ((wsl --list -q) -notcontains $_) {
                 throw "Distro not installed"
             }
@@ -112,7 +112,7 @@ function Install-WslDistro {
     [CmdletBinding(DefaultParameterSetName="Secured")]
     param(
         # The distro to install
-        [ValidateSscript({
+        [ValidateScript({
             if ((wsl --list --online -q) -notcontains $_) {
                 throw "Distro not known to WSL"
             }
