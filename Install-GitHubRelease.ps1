@@ -169,15 +169,16 @@ function Install-GitHubRelease {
 
     peazip -ext2folder $asset.name
 
-    Join-Path $asset.name
+    foreach ($Name in Get-ChildItem $tempdir -Directory -Name) {
+        if (Test-Path $Env:LocalAppData\Programs\$name) {
+            Remove-Item $Env:LocalAppData\Programs\$name -Recurse -Force
+        }
+        Move-Item $Name -Destination $Env:LocalAppData\Programs -Force
 
-    if (Test-Path $Env:LocalAppData\Programs\chezmoi) {
-        Remove-Item $Env:LocalAppData\Programs\chezmoi -Recurse -Force
+        foreach($path in Get-ChildItem $Env:LocalAppData\Programs\$name -Filter *.exe) {
+            Install-BinFile -Name $path.BaseName -Path $path.FullName
+        }
     }
-
-    Get-ChildItem $tempdir -Directory | Move-Item -Destination $Env:LocalAppData\Programs -Force
-
-
 }
 
 Install-GitHubRelease @PSBoundParameters
