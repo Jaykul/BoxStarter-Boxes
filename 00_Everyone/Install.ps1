@@ -41,7 +41,7 @@ if ($IsLinux -or $IsMacOs) {
 
 TZUTIL /s "Eastern Standard Time"
 
-Import-Module (Join-Path $PSScriptRoot\PoshBox.psm1) -Force -Scope Global
+Import-Module (Join-Path $PSScriptRoot PoshBox.psm1) -Force -Scope Global
 
 # I'm giving in to the easy way. This way it's easier to customize by deleting the files you don't want
 foreach($file in Get-ChildItem $PSScriptRoot -Filter *.ps1 -Exclude Install.ps1) {
