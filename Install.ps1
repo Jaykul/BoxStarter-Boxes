@@ -46,9 +46,9 @@ if ($PSScriptRoot -and -not $Boxstarter) {
 
     # If this script is being run via Boxstarter, we need to clone the rest of the repository
     if (!$PSScriptRoot -or (Convert-Path [015]*\Install.ps1).Count -lt 3) {
-        $tempdir = Join-Path ([IO.Path]::GetTempPath()) ([IO.Path]::GetRandomFileName())
-        New-Item -Type Directory -Path $tempdir | Out-Null
-        Set-Location $tempdir
+        $gitempdir = Join-Path ([IO.Path]::GetTempPath()) ([IO.Path]::GetRandomFileName())
+        New-Item -Type Directory -Path $gitempdir | Out-Null
+        Set-Location $gitempdir
         Write-Host "Cloning BoxStarter-Boxes"
 
         & { # Git sucks:
@@ -99,6 +99,6 @@ if ($PSScriptRoot -and -not $Boxstarter) {
 & (Convert-Path 5*\Install.ps1) @PSBoundParameters
 
 Pop-Location
-if ($tempdir) {
-    Remove-Item $tempdir -Recurse -Force
+if ($gitempdir) {
+    Remove-Item $gitempdir -Recurse -Force -ErrorAction Continue
 }

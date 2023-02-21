@@ -13,9 +13,9 @@ Push-Location
 
 # If this script is being run DIRECTLY via Boxstarter, we need to clone the rest of the repository
 if ($Boxstarter -and (Convert-Path (Join-Path "$PSScriptRoot\" ..\[015]*\Install.ps1)).Count -lt 3) {
-    $tempdir = Join-Path ([IO.Path]::GetTempPath()) ([IO.Path]::GetRandomFileName())
-    New-Item -Type Directory -Path $tempdir | Out-Null
-    Set-Location $tempdir
+    $tendir = Join-Path ([IO.Path]::GetTempPath()) ([IO.Path]::GetRandomFileName())
+    New-Item -Type Directory -Path $tendir | Out-Null
+    Set-Location $tendir
     Write-Host "Cloning BoxStarter-Boxes"
 
     & { # Git sucks:
@@ -69,8 +69,8 @@ foreach($file in Get-ChildItem $PSScriptRoot -Filter *.ps1 -Exclude Install.ps1)
 }
 
 Pop-Location
-if ($tempdir) {
-    Remove-Item $tempdir -Recurse -Force
+if ($tendir) {
+    Remove-Item $tendir -Recurse -Force -ErrorAction Continue
 }
 
 Finalize
