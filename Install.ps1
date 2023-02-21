@@ -42,13 +42,12 @@ if ($PSScriptRoot -and -not $Boxstarter) {
     Invoke-BoxStarter (Join-Path $PSScriptRoot ..\5*\Install.ps1)
 } elseif ($Boxstarter) {
     Write-Host "Running in Boxstarter, skipping bootstrap"
+    choco upgrade -y git.install --package-parameters="'/GitOnlyOnPath /WindowsTerminal /NoShellIntegration /SChannel'"
 
     # If this script is being run via Boxstarter, we need to clone the rest of the repository
     $tempdir = Join-Path ([IO.Path]::GetTempPath()) ([IO.Path]::GetRandomFileName())
     New-Item -Type Directory -Path $tempdir | Out-Null
     Push-Location $tempdir
-
-    choco upgrade -y git.install --package-parameters="'/GitOnlyOnPath /WindowsTerminal /NoShellIntegration /SChannel'"
     Write-Host "Cloning BoxStarter-Boxes"
 
     & { # Git sucks:
@@ -56,7 +55,7 @@ if ($PSScriptRoot -and -not $Boxstarter) {
         $outputStream = ""
         $outputMessage = @()
         $ErrorActionPreference, $oldErrorAction = 'Continue', $ErrorActionPreference
-        $Output = git clone https://github.com/Jaykul/BoxStarter-Boxes.git Boxes 2>&1 | Out-Host
+        $Output = git clone https://github.com/Jaykul/BoxStarter-Boxes.git Boxes 2>&1
         $ErrorActionPreference = $oldErrorAction
         # This empty error record causes an extra iteration to flush the output
         switch (@($Output) + ([System.Management.Automation.ErrorRecord]::new([Exception]::new(""), "NotAnError", "NotSpecified", $null))) {
@@ -66,6 +65,7 @@ if ($PSScriptRoot -and -not $Boxstarter) {
                 $null = $_.Exception.Message -match "^((?<stream>fatal|error|warning):)?\s*(?<message>.*)$"
                 $message = $Matches["message"]
                 $stream = if ($Matches["stream"]) { $Matches["stream"] } else { "Verbose" }
+                Write-Host "$([char]27)[38;2;255;0;0m$([char]27)[48;2;255;255;255m $stream $([char]27)[38;2;255;255;255m$([char]27)[49m $message"
                 # If this is the same stream as the last one, then append the output
                 if ($outputStream -eq $stream -and $message.Length) {
                     $outputMessage = @($outputMessage) + $message
