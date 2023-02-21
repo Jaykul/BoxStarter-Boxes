@@ -48,7 +48,8 @@ Import-Module (Join-Path $PSScriptRoot PoshBox.psm1) -Force -Scope Global
 Write-Host "=== EVERYONE ==="
 
 # I'm giving in to the easy way. This way it's easier to customize by deleting the files you don't want
-foreach($file in Get-ChildItem $PSScriptRoot -Filter *.ps1 -Exclude Install.ps1) {
+foreach ($file in Get-ChildItem $PSScriptRoot -Filter "??_*.ps1") {
+    Write-Host "=== $($file.Name) ==="
     & $file.FullName
 }
 
