@@ -93,12 +93,6 @@ function Add-WslUser {
     [CmdletBinding()]
     param(
         # The distro to add the user to
-        [ValidateScript({
-            if ((wsle --list -q) -notcontains $_) {
-                throw "Distro not installed"
-            }
-            $true
-        })]
         [Parameter(Mandatory)]
         $Distribution,
 
@@ -125,16 +119,6 @@ function Install-WslDistro {
     [CmdletBinding(DefaultParameterSetName="Secured")]
     param(
         # The distribution to install
-        [ValidateScript({
-            # BUG BUG: wsl output can't be used this way because of the encoding
-            if (-not ((wsle --list --online) -match "^$_\s")) {
-                throw "$_ distribution not known to WSL"
-            }
-            if ((wsle --list -q) -contains $_) {
-                throw "distribution already installed"
-            }
-            $true
-        })]
         [Parameter(Position=0)]
         $Distribution = "ubuntu",
 
