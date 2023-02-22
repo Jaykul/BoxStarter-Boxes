@@ -120,25 +120,25 @@ function Add-WslUser {
 function Install-WslDistro {
     <#
         .SYNOPSIS
-            Installs a WSL distro non-interactively
+            Installs a WSL Distribution non-interactively
     #>
     [CmdletBinding(DefaultParameterSetName="Secured")]
     param(
-        # The distro to install
+        # The distribution to install
         [ValidateScript({
             # BUG BUG: wsl output can't be used this way because of the encoding
-            if ((wsle --list --online) -notmatch "^$_\s") {
-                throw "$_ distro not known to WSL"
+            if (-not ((wsle --list --online) -match "^$_\s")) {
+                throw "$_ distribution not known to WSL"
             }
             if ((wsle --list -q) -contains $_) {
-                throw "Distro already installed"
+                throw "distribution already installed"
             }
             $true
         })]
         [Parameter(Position=0)]
         $Distribution = "ubuntu",
 
-        # The default user for this distro (by default, your user name, but all in lowercase)
+        # The default user for this distribution (by default, your user name, but all in lowercase)
         [Parameter(ParameterSetName="Insecure")]
         $Username = $Env:USERNAME.ToLower(),
 
@@ -147,7 +147,7 @@ function Install-WslDistro {
 
         [switch]$Default
     )
-    # Install the distro non-interactively
+    # Install the distribution non-interactively
     wsl --install -d $Distribution --no-launch
     wsl --install -d $Distribution
 
