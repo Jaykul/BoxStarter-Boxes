@@ -72,6 +72,19 @@ function Finalize {
     }
 }
 
+function Invoke-Wsl {
+    <#
+        .SYNOPSIS
+            Wrap wsl.exe with Console.Encoding because it ignores Console.Encoding
+            This way when we get UTF-16 encoding the console handles it.
+    #>
+    [Console]::OutputEncoding, $Encoding = [Text.Encoding]::Unicode, [Console]::OutputEncoding
+    wsl.exe @args
+    [Console]::OutputEncoding = $Encoding
+}
+
+Set-Alias wsle Invoke-Wsl
+
 function Add-WslUser {
     <#
         .SYNOPSIS
@@ -81,13 +94,13 @@ function Add-WslUser {
     param(
         # The distro to add the user to
         [ValidateScript({
-            if ((wsl --list -q) -notcontains $_) {
+            if ((wsle --list -q) -notcontains $_) {
                 throw "Distro not installed"
             }
             $true
         })]
         [Parameter(Mandatory)]
-        $Distro,
+        $Distribution,
 
         # The user and password to add
         [Parameter(Mandatory)]
@@ -96,12 +109,12 @@ function Add-WslUser {
     # If we were interactive, you could leave off the --disabled-password and it would prompt
     if ($Credential.Password.Length -eq 0) {
         Write-Warning "Creating passwordless user"
-        wsl -d $Distro -u root adduser --gecos GECOS --disabled-password $Credential.UserName.ToLower()
+        wsl -d $Distribution -u root adduser --gecos GECOS --disabled-password $Credential.UserName.ToLower()
     } else {
         "{0}`n{0}`n" -f $Credential.GetNetworkCredential().Password |
-            wsl -d $Distro -u root adduser --gecos GECOS $Credential.UserName.ToLower()
+            wsl -d $Distribution -u root adduser --gecos GECOS $Credential.UserName.ToLower()
     }
-    wsl -d $Distro -u root usermod -aG sudo $WslUser
+    wsl -d $Distribution -u root usermod -aG sudo $WslUser
 }
 
 function Install-WslDistro {
@@ -113,16 +126,17 @@ function Install-WslDistro {
     param(
         # The distro to install
         [ValidateScript({
-            if ((wsl --list --online -q) -notcontains $_) {
-                throw "Distro not known to WSL"
+            # BUG BUG: wsl output can't be used this way because of the encoding
+            if ((wsle --list --online) -notmatch "^$_\s") {
+                throw "$_ distro not known to WSL"
             }
-            if ((wsl --list -q) -contains $_) {
+            if ((wsle --list -q) -contains $_) {
                 throw "Distro already installed"
             }
             $true
         })]
         [Parameter(Position=0)]
-        $Distro = "ubuntu",
+        $Distribution = "ubuntu",
 
         # The default user for this distro (by default, your user name, but all in lowercase)
         [Parameter(ParameterSetName="Insecure")]
@@ -134,24 +148,24 @@ function Install-WslDistro {
         [switch]$Default
     )
     # Install the distro non-interactively
-    wsl --install -d $Distro --no-launch
-    wsl --install -d $Distro
+    wsl --install -d $Distribution --no-launch
+    wsl --install -d $Distribution
 
     # Then create the user after the fact
     if (!$Credential) {
         $Credential = [PSCredential]::new($Username, [securestring]::new())
     }
-    Add-WslUser $Distro $Credential
+    Add-WslUser $Distribution $Credential
 
     # Sets the default user to $WslUser
-    if (Get-Command $Distro) {
-        & $Distro config --default-user $WslUser
+    if (Get-Command $Distribution) {
+        & $Distribution config --default-user $WslUser
     }
 
     if ($Default) {
-        # Set the default distro to $Distro
-        wsl -s $Distro
+        # Set the default distro to $Distribution
+        wsl -s $Distribution
     }
 
-    Write-Warning "$Distro distro is installed. You may need to set a password with: wsl -d $Distro -u root passwd $($Env:USERNAME.ToLower())"
+    Write-Warning "$Distribution distro is installed. You may need to set a password with: wsl -d $Distribution -u root passwd $($Env:USERNAME.ToLower())"
 }
