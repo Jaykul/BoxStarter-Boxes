@@ -26,6 +26,9 @@ foreach ($file in Get-ChildItem $PSScriptRoot -Filter "??_*.ps1") {
 
 # Actually customize everything else
 choco upgrade -y chezmoi
-chezmoi init $Env:USERNAME --apply
+
+Start-Sleep 2
+Write-Host "In a new PowerShell session, run: chezmoi init $Env:USERNAME --apply"
+# chezmoi init $Env:USERNAME --apply
 
 Finalize
