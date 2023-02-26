@@ -83,7 +83,7 @@ function Invoke-Wsl {
     [Console]::OutputEncoding = $Encoding
 }
 
-Set-Alias wsle Invoke-Wsl
+Set-Alias wsle Invoke-Wsl -Scope Global
 
 function Add-WslUser {
     <#
@@ -103,12 +103,15 @@ function Add-WslUser {
     # If we were interactive, you could leave off the --disabled-password and it would prompt
     if ($Credential.Password.Length -eq 0) {
         Write-Warning "Creating passwordless user"
+        Write-Host "`n>" wsl "-d" $Distribution "-u" root adduser "--gecos" GECOS "--disabled-password" $Credential.UserName.ToLower()
         wsl -d $Distribution -u root adduser --gecos GECOS --disabled-password $Credential.UserName.ToLower()
     } else {
+            Write-Host "`n>" wsl "-d" $Distribution "-u" root adduser "--gecos" GECOS $Credential.UserName.ToLower()
         "{0}`n{0}`n" -f $Credential.GetNetworkCredential().Password |
             wsl -d $Distribution -u root adduser --gecos GECOS $Credential.UserName.ToLower()
     }
-    wsl -d $Distribution -u root usermod -aG sudo $WslUser
+    Write-Host "`n>" wsl "-d" $Distribution "-u" root usermod "-aG" sudo $Credential.UserName.ToLower()
+    wsl -d $Distribution -u root usermod -aG sudo $Credential.UserName.ToLower()
 }
 
 function Install-WslDistro {
@@ -132,24 +135,71 @@ function Install-WslDistro {
         [switch]$Default
     )
     # Install the distribution non-interactively
-    wsl --install -d $Distribution --no-launch
-    wsl --install -d $Distribution
+    Write-Host "`n>" wsl --install $Distribution --no-launch
+    wsl --install $Distribution --no-launch
+    Write-Host ">" $Distribution install --root
+    &$Distribution install --root
+
+    # Start-Sleep -Milliseconds 1000
+    # Write-Host "`n>" wsl --install $Distribution
+    # wsl --install $Distribution
+    # Start-Sleep -Milliseconds 100
+    # get-process $Distribution | stop-process
 
     # Then create the user after the fact
     if (!$Credential) {
-        $Credential = [PSCredential]::new($Username, [securestring]::new())
+        $Credential = [PSCredential]::new($Username.ToLower(), [securestring]::new())
     }
     Add-WslUser $Distribution $Credential
 
-    # Sets the default user to $WslUser
+    # Sets the default user
     if (Get-Command $Distribution) {
-        & $Distribution config --default-user $WslUser
+        Write-Host $Distribution config --default-user $Credential.UserName.ToLower()
+        & $Distribution config --default-user $Credential.UserName.ToLower()
     }
 
     if ($Default) {
         # Set the default distro to $Distribution
-        wsl -s $Distribution
+        Write-Host "`n>" wsl --set-default $Distribution
+        wsl --set-default $Distribution
     }
 
     Write-Warning "$Distribution distro is installed. You may need to set a password with: wsl -d $Distribution -u root passwd $($Env:USERNAME.ToLower())"
+}
+
+#############################################################################
+# Bootstrap the environment, in case PoshBox is imported outside BoxStarter #
+#############################################################################
+if (!(Get-Command choco)) {
+    Write-Host "Bootstrapping Chocolatey" -NoNewline
+    for ($x=0;$x-lt3;$x++) {
+        Start-Sleep -Milliseconds 300
+        Write-Host "." -NoNewline
+    }
+    Write-Host
+    Invoke-Expression (Invoke-RestMethod https://community.chocolatey.org/install.ps1)
+
+    # Update PATH so it works "now"
+    $Env:PATH = $Env:PATH +";" + (Convert-Path "$Env:ProgramData\Chocolatey\bin" -ErrorAction Stop)
+}
+
+Import-module (Convert-Path "$Env:ProgramData\Chocolatey\helpers\chocolateyInstaller.psm1")
+
+if (-not (Get-Module Boxstarter.*).Count -ge 4) {
+    Write-Host "Bootstrapping Boxstarter" -NoNewline
+    for ($x=0;$x-lt3;$x++) {
+        Start-Sleep -Milliseconds 300
+        Write-Host "." -NoNewline
+    }
+    Write-Host
+
+    choco upgrade -y boxstarter
+
+    # Update PATH so it works "now"
+    $Env:PSModulePath = $Env:PSModulePath + ';' + (Convert-Path "$Env:ProgramData\Boxstarter" -ErrorAction Stop)
+
+    Import-Module Boxstarter.Chocolatey -DisableNameChecking -ErrorAction SilentlyContinue -Scope Global
+    Import-Module Boxstarter.Bootstrapper -DisableNameChecking -ErrorAction SilentlyContinue -Scope Global
+    Import-Module Boxstarter.Common -DisableNameChecking -ErrorAction SilentlyContinue -Scope Global
+    Import-Module Boxstarter.WinConfig -DisableNameChecking -ErrorAction SilentlyContinue -Scope Global
 }

@@ -17,9 +17,10 @@ if ((wsl --list -q) -notcontains $WslDistro) {
     Install-WslDistro -Distribution $WslDistro -Username $Env:USERNAME.ToLower() -Default
 }
 
+# BUG: This assumes your distro uses apt...
 # Update everything on the default distro
-wsl -u root apt update
-wsl -u root apt upgrade -y
+wsl -d $Distribution -u root apt update
+wsl -d $Distribution -u root apt upgrade -y
 
 RefreshEnv
 if (Test-PendingReboot) {

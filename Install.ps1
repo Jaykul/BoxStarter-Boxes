@@ -17,30 +17,17 @@ param (
 Set-StrictMode -off
 $ErrorActionPreference = 'Stop'
 Push-Location
-if (!(Get-Command choco)) {
-    Write-Host "Bootstrapping Chocolatey"
-    Invoke-Expression (Invoke-RestMethod https://community.chocolatey.org/install.ps1)
 
-    Set-Alias choco (Convert-Path "$Env:ProgramData\Chocolatey\bin\choco.exe")
-    Import-module (Convert-Path "$Env:ProgramData\Chocolatey\helpers\chocolateyInstaller.psm1")
-}
-
-if ($PSScriptRoot -and -not $Boxstarter) {
-    Write-Host "Bootstrapping Boxstarter"
-
-    choco upgrade -y boxstarter
-
-    $Env:PSModulePath += ';' + (Convert-Path "$Env:ProgramData\Boxstarter")
-
-    Import-Module Boxstarter.Chocolatey -DisableNameChecking -ErrorAction SilentlyContinue -Scope Global
-    Import-Module Boxstarter.Bootstrapper -DisableNameChecking -ErrorAction SilentlyContinue -Scope Global
-    Import-Module Boxstarter.Common -DisableNameChecking -ErrorAction SilentlyContinue -Scope Global
-    Import-Module Boxstarter.WinConfig -DisableNameChecking -ErrorAction SilentlyContinue -Scope Global
-
-} elseif ($Boxstarter) {
+if ($Boxstarter) {
     Write-Host "Running in Boxstarter, skipping bootstrap"
-    choco upgrade -y git.install --package-parameters="'/GitOnlyOnPath /WindowsTerminal /NoShellIntegration /SChannel'"
+    if (!(Get-Command choco)) {
+        Write-Host "Bootstrapping Chocolatey"
+        Invoke-Expression (Invoke-RestMethod https://community.chocolatey.org/install.ps1)
 
+        Set-Alias choco (Convert-Path "$Env:ProgramData\Chocolatey\bin\choco.exe")
+        Import-module (Convert-Path "$Env:ProgramData\Chocolatey\helpers\chocolateyInstaller.psm1")
+    }
+    choco upgrade -y git.install --package-parameters="'/GitOnlyOnPath /WindowsTerminal /NoShellIntegration /SChannel'"
 
     # If this script is being run via Boxstarter, we need to clone the rest of the repository
     if (!$PSScriptRoot -or (Convert-Path [015]*\Install.ps1).Count -lt 3) {
