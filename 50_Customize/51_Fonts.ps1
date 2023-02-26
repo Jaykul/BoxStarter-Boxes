@@ -10,6 +10,7 @@ function Install-NerdFont {
     # Hacking chocolatey a little bit
     $env:ChocolateyIgnoreChecksums = 'true'
     $env:ChocolateyPackageFolder = "$Env:ChocolateyInstall\lib\NerdFonts"
+    $env:ChocolateyPackageName = "NerdFonts"
 
     # If they install them all, do it in alphabetical order
     foreach ($Font in $Name) {
