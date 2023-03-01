@@ -13,7 +13,4 @@ try {
     "MSTerminalSettings"
 ) | UpdateModule
 
-Get-MSTerminalProfile | Set-MSTerminalProfile -FontFace "Caskaydia Cove NFM"
-
-# Push-Location ~\Projects\Modules
-# git clone https://github.com/Jaykul/Profile.git Profile
+Get-MSTerminalProfile | Set-MSTerminalProfile -FontFace "CaskaydiaCove NFM"
