@@ -8,6 +8,7 @@ choco upgrade -y fzf
 choco upgrade -y bat
 choco upgrade -y yq
 choco upgrade -y jq
+choco upgrade -y gh
 
 
 choco upgrade -y git.install --package-parameters="'/GitOnlyOnPath /WindowsTerminal /NoShellIntegration /SChannel'"
