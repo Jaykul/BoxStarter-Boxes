@@ -1,7 +1,7 @@
 # I really only want to remove these once.
 # If the user reinstalls them, that's their choice.
 # The easiest test is whether anything else I installed is installed.
-if (!(Get-Command peazip)) {
+if (!(Get-Command peazip -ErrorAction Ignore)) {
     Write-Host "=== Uninstall some bloatward that comes with Windows out of the box ===" -ForegroundColor "Yellow"
     @(
         "*.AdobePhotoshopExpress"
