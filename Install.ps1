@@ -28,6 +28,7 @@ if ($Boxstarter) {
         Import-module (Convert-Path "$Env:ProgramData\Chocolatey\helpers\chocolateyInstaller.psm1")
     }
     choco upgrade -y git.install --package-parameters="'/GitOnlyOnPath /WindowsTerminal /NoShellIntegration /SChannel'"
+    RefreshEnv # git isn't shimmed, so we need it's path
 
     # If this script is being run via Boxstarter, we need to clone the rest of the repository
     if (!$PSScriptRoot -or (Convert-Path [015]*\Install.ps1).Count -lt 3) {
