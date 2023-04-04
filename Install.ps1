@@ -19,14 +19,21 @@ $ErrorActionPreference = 'Stop'
 Push-Location
 
 if ($Boxstarter) {
-    Write-Host "Running in Boxstarter, skipping bootstrap"
-    if (!(Get-Command choco)) {
+    # When this script is called via BoxStarter...
+    # Chocolatey should be installed (by BoxStarter)
+    # But we need to use it to install git and clone the repo
+    if (!(Get-Command choco -ErrorAction Ignore)) {
         Write-Host "Bootstrapping Chocolatey"
         Invoke-Expression (Invoke-RestMethod https://community.chocolatey.org/install.ps1)
 
-        Set-Alias choco (Convert-Path "$Env:ProgramData\Chocolatey\bin\choco.exe")
-        Import-module (Convert-Path "$Env:ProgramData\Chocolatey\helpers\chocolateyInstaller.psm1")
+        # Update the environment so that it works without a restart:
+        $Env:ChocolateyInstall = [System.Environment]::GetEnvironmentVariable("ChocolateyInstall", "Machine")
+        $Env:PATH = @($Env:PATH -split "\\?;" -ne "$Env:ChocolateyInstall\bin") + "$Env:ChocolateyInstall\bin" -join ";"
+        # Aliases are faster than path searching
+        Set-Alias choco (Convert-Path "$Env:ChocolateyInstall\bin\choco.exe")
     }
+    Import-Module (Convert-Path "$Env:ChocolateyInstall\helpers\chocolateyInstaller.psm1")
+
     choco upgrade -y git.install --package-parameters="'/GitOnlyOnPath /WindowsTerminal /NoShellIntegration /SChannel'"
     RefreshEnv # git isn't shimmed, so we need it's path
 

@@ -1,5 +1,5 @@
 # If you installed this from the windows store, and then logged in with the same account, it would already be installed...
-if (!(Get-AppxPackage Microsoft.WindowsTerminal)) {
+if (!(Get-AppxPackage Microsoft.WindowsTerminal -ErrorAction Ignore)) {
     choco upgrade -y microsoft-windows-terminal
 }
 choco upgrade -y delta

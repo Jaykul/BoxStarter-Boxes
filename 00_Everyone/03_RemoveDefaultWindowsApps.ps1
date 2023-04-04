@@ -2,7 +2,7 @@
 # If the user reinstalls them, that's their choice.
 # The easiest test is whether anything else I installed is installed.
 if (!(Get-Command peazip -ErrorAction Ignore)) {
-    Write-Host "=== Uninstall some bloatward that comes with Windows out of the box ===" -ForegroundColor "Yellow"
+    Write-Host "=== Uninstall some bloatware that comes with Windows out of the box ===" -ForegroundColor "Yellow"
     @(
         "*.AdobePhotoshopExpress"
         "*.Duolingo-LearnLanguagesforFree"
@@ -30,6 +30,7 @@ if (!(Get-Command peazip -ErrorAction Ignore)) {
         "Microsoft.Messaging"
         "Microsoft.MicrosoftOfficeHub"
         "Microsoft.MicrosoftStickyNotes"
+        "Microsoft.MixedReality.Portal"
         "Microsoft.NetworkSpeedTest"
         "Microsoft.Office.Sway"
         "Microsoft.OneConnect"
@@ -62,7 +63,6 @@ if (!(Get-Command peazip -ErrorAction Ignore)) {
         # "Microsoft.MicrosoftEdge.Beta"
         # "Microsoft.MicrosoftEdge.Dev"
         # "Microsoft.MicrosoftEdge.Stable"
-        # "Microsoft.MixedReality.Portal"
         # "Microsoft.RawImageExtension"
         # "Microsoft.SecHealthUI"
         # "Microsoft.StorePurchaseApp"

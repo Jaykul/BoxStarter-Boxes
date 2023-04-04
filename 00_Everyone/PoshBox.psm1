@@ -4,6 +4,7 @@ filter RemoveAppX {
         [Parameter(Mandatory,ValueFromPipeline)]
         [string]$appName
     )
+    trap { continue } # If it doesn't work, just shut up and keep going
     $ErrorActionPreference = "SilentlyContinue"
     Write-Information "Trying to remove $appName" -InformationAction Continue
     Get-AppxPackage $appName -AllUsers | Remove-AppxPackage -AllUsers
@@ -25,12 +26,13 @@ filter InstallCodeExtension {
     }
 }
 
-# Eventually PSResource will be the default, and it's faster, so we'll use it if it's here
+# Eventually PSResource will be the default, and it's faster, so we'll use it, but only if it's already here
 if (Get-Command Install-PSResource -ErrorAction Ignore) {
+    Set-PSResourceRepository -Name PSGallery -Trusted
     filter UpdateModule {
         [CmdletBinding()]
         param(
-            [Parameter(Mandatory,ValueFromPipeline)]
+            [Parameter(Mandatory, ValueFromPipeline)]
             [string]$module
         )
         Find-PSResource $module -Type Module | Where-Object {
@@ -38,15 +40,37 @@ if (Get-Command Install-PSResource -ErrorAction Ignore) {
         } | Install-PSResource -TrustRepository -AcceptLicense
     }
 } else {
+    Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+    Install-PackageProvider NuGet -MinimumVersion 2.8.5.208 -ForceBootstrap
+
     filter UpdateModule {
         [CmdletBinding()]
         param(
-            [Parameter(Mandatory,ValueFromPipeline)]
+            [Parameter(Mandatory, ValueFromPipeline)]
             [string]$module
         )
         Find-Module $module | Where-Object {
             -not ( Get-Module -FullyQualifiedName @{ ModuleName = $_.Name; ModuleVersion = $_.Version } -ListAvailable )
         } | Install-Module -SkipPublisherCheck -AllowClobber -RequiredVersion { $_.Version }
+    }
+
+    @(
+        "PackageManagement"
+        "PowerShellGet"
+    ) | UpdateModule
+
+    # How about now?
+    if (Get-Command Install-PSResource -ErrorAction Ignore) {
+        filter UpdateModule {
+            [CmdletBinding()]
+            param(
+                [Parameter(Mandatory, ValueFromPipeline)]
+                [string]$module
+            )
+            Find-PSResource $module -Type Module | Where-Object {
+                -not ( Get-Module -FullyQualifiedName @{ ModuleName = $_.Name; ModuleVersion = $_.Version } -ListAvailable )
+            } | Install-PSResource -TrustRepository -AcceptLicense
+        }
     }
 }
 
@@ -75,8 +99,8 @@ function Finalize {
 function Invoke-Wsl {
     <#
         .SYNOPSIS
-            Wrap wsl.exe with Console.Encoding because it ignores Console.Encoding
-            This way when we get UTF-16 encoding the console handles it.
+            wsl.exe ignores Console.Encoding and always outputs UTF-16
+            Set Console.Encoding to UTF-16 so the console can handle it
     #>
     [Console]::OutputEncoding, $Encoding = [Text.Encoding]::Unicode, [Console]::OutputEncoding
     wsl.exe @args
@@ -170,28 +194,27 @@ function Install-WslDistro {
 #############################################################################
 # Bootstrap the environment, in case PoshBox is imported outside BoxStarter #
 #############################################################################
-if (!(Get-Command choco)) {
-    Write-Host "Bootstrapping Chocolatey" -NoNewline
-    for ($x=0;$x-lt3;$x++) {
-        Start-Sleep -Milliseconds 300
-        Write-Host "." -NoNewline
-    }
-    Write-Host
+if (!(Get-Command choco -ErrorAction Ignore)) {
+    Write-Host "Bootstrapping Chocolatey"
     Invoke-Expression (Invoke-RestMethod https://community.chocolatey.org/install.ps1)
 
-    # Update PATH so it works "now"
-    $Env:PATH = $Env:PATH +";" + (Convert-Path "$Env:ProgramData\Chocolatey\bin" -ErrorAction Stop)
+    # Update the environment so that it works without a restart:
+    $Env:ChocolateyInstall = [System.Environment]::GetEnvironmentVariable("ChocolateyInstall", "Machine")
+    $Env:PATH = @($Env:PATH -split "\\?;" -ne "$Env:ChocolateyInstall\bin") + "$Env:ChocolateyInstall\bin" -join ";"
+    # Aliases are faster than path searching
+    Set-Alias choco (Convert-Path "$Env:ChocolateyInstall\bin\choco.exe")
+}
+Import-module (Convert-Path "$Env:ChocolateyInstall\helpers\chocolateyInstaller.psm1") -Scope Global
+
+if (!(Get-Command Install-ChocolateyFont -ErrorAction Ignore)) {
+    choco upgrade chocolatey-font-helpers.extension -y
+    Import-Module "$Env:ChocolateyInstall\extensions\chocolatey-font-helpers\FontHelp.psm1" -Scope Global -ErrorAction Stop
 }
 
-Import-module (Convert-Path "$Env:ProgramData\Chocolatey\helpers\chocolateyInstaller.psm1")
+
 
 if (-not (Get-Module Boxstarter.*).Count -ge 4) {
-    Write-Host "Bootstrapping Boxstarter" -NoNewline
-    for ($x=0;$x-lt3;$x++) {
-        Start-Sleep -Milliseconds 300
-        Write-Host "." -NoNewline
-    }
-    Write-Host
+    Write-Host "Bootstrapping Boxstarter"
 
     choco upgrade -y boxstarter
 
