@@ -13,4 +13,6 @@ choco upgrade -y bicep
     # Azure DevOps
     "ms-azure-devops.azure-pipelines"
     "ms-vscode.azure-repos"
+    "ms-azuretools.vscode-bicep"
+    "ms-azuretools.vscode-azureresourcegroups"
 ) | InstallCodeExtension
