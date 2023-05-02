@@ -1,3 +1,4 @@
+Import-Module $PSScriptRoot\WSL.psm1
 #--- Enable developer mode on the system ---
 Set-ItemProperty -Path HKLM:\Software\Microsoft\Windows\CurrentVersion\AppModelUnlock -Name AllowDevelopmentWithoutDevLicense -Value 1
 
@@ -15,12 +16,14 @@ if (!$WslDistro) { $WslDistro = "Ubuntu" }
 if ((wsl --list -q) -notcontains $WslDistro) {
     # NOTE: This triggers the "Insecure" parameter set, and we up with no password
     Install-WslDistro -Distribution $WslDistro -Username $Env:USERNAME.ToLower() -Default
+    # Set up npiperelay for this distro so I can use KeeAgent from WSL
+    Install-WslKeeAgentPipe -Distribution $WslDistro -Username $Env:USERNAME.ToLower()
 }
 
 # BUG: This assumes your distro uses apt...
 # Update everything on the default distro
-wsl -d $Distribution -u root apt update
-wsl -d $Distribution -u root apt upgrade -y
+wsl -d $WslDistro -u root apt update
+wsl -d $WslDistro -u root apt upgrade -y
 
 RefreshEnv
 if (Test-PendingReboot) {
