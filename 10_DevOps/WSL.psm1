@@ -145,5 +145,5 @@ function Install-WslKeeAgentPipe {
     wsl -d $Distribution -u root chmod +x /usr/local/bin/ssh-agent-pipe
 
     # Add to .bashrc for the specified user
-    wsl -d $Distribution -u $Username -- bash -c "echo \`"source /usr/local/bin/ssh-agent-pipe\`" >> ~/.bashrc"
+    wsl -d $Distribution -u $Username -- bash -c "echo `"source /usr/local/bin/ssh-agent-pipe`" >> ~/.bashrc"
 }
