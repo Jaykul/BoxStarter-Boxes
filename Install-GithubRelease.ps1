@@ -7,10 +7,37 @@
         Install-GithubRelease FluxCD Flux2
 
         Install `Flux` from the https://github.com/FluxCD/Flux2 repository
+    .EXAMPLE
+        Install-GithubRelease earthly earthly
+
+        Install `earthly` from the https://github.com/earthly/earthly repository
+    .EXAMPLE
+        Install-GithubRelease junegunn fzf
+
+        Install `fzf` from the https://github.com/junegunn/fzf repository
+    .EXAMPLE
+        Install-GithubRelease BurntSushi ripgrep
+
+        Install `rg` from the https://github.com/BurntSushi/ripgrep repository
+    .EXAMPLE
+        Install-GithubRelease opentofu opentofu
+
+        Install `opentofu` from the https://github.com/opentofu/opentofu repository
+    .EXAMPLE
+        Install-GithubRelease twpayne chezmoi
+
+        Install `chezmoi` from the https://github.com/twpayne/chezmoi repository
+    .EXAMPLE
+        Install-GithubRelease sharkdp bat
+        Install-GithubRelease sharkdp fd
+
+        Install `bat` and `fd` from their repositories
+    .NOTES
+        All these examples are (only) tested on Windows and WSL Ubuntu
 #>
 
 <#PSScriptInfo
-    .VERSION 1.0.1
+    .VERSION 1.2.0
 
     .GUID 802367c6-654a-450b-94db-87e1d52e020a
 
@@ -18,7 +45,7 @@
 
     .COMPANYNAME HuddledMasses.org
 
-    .COPYRIGHT Copyright (c) 2019, Joel Bennett
+    .COPYRIGHT Copyright (c) 2019-2023, Joel Bennett
 
     .TAGS Install Github Releases Binaries Linux Windows
 
@@ -28,7 +55,10 @@
 
     .RELEASENOTES
 
-        Broke this out from my BoxStarter Boxes, so I could share it more easily.
+    - **1.2.0** Added support for .zip files on Linux
+                Also for checksum files based on the name "SHA256SUMS" instead of "checksums"
+    - **1.1.0** Added support for directly downloading binaries (.exe on Windows, or no extension) to support earthly/earthly
+    - **1.0.0** Broke this out from my BoxStarter Boxes, so I could share it more easily.
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(
@@ -41,7 +71,7 @@ param(
     [Parameter(Mandatory)]
     [string]$Repo,
 
-    # The version of the release to download. Defaults to 'latest'
+    # The version (tag) of the release to download. Defaults to 'latest' which is always the latest release.
     [string]$Version = 'latest',
 
     # The location to install to. Defaults to $Env:LocalAppData\Programs on Windows, /usr/local/bin on Linux/MacOS
@@ -72,7 +102,7 @@ function Get-OSPlatform {
         switch($OS) {
             "windows" { "windows|(?<!dar)win" }
             "linux"   { "linux|unix" }
-            "darwin" { "darwin|osx" }
+            "darwin"  { "darwin|osx" }
             "freebsd" { "freebsd" }
         }
     } else {
@@ -102,7 +132,7 @@ function Get-OSArchitecture {
             "Arm"   { "arm(?!64)" }
             "Arm64" { "arm64" }
             "X86"   { "x86|386" }
-            "X64"   { "amd64|x64" }
+            "X64"   { "amd64|x64|x86_64" }
         }
     } else {
         $arch
@@ -186,22 +216,32 @@ function Install-GitHubRelease {
         $Architecture = (Get-OSArchitecture -Pattern),
 
         # The location to install to. Defaults to $Env:LocalAppData\Programs on Windows, /usr/local/bin on Linux/MacOS
-        [string]$BinDir = $(if ($OS -notmatch "windows") { '/usr/local/bin' } elseif ($Env:LocalAppData) { "$Env:LocalAppData/Programs" } else { "$HOME/.tools" })
+        [string]$BinDir = $(if ($OS -notmatch "windows") { '/usr/local/bin' } elseif ($Env:LocalAppData) { "$Env:LocalAppData\Programs\Tools" } else { "$HOME/.tools" })
     )
+    # A list of extensions in order of preference
+    $extension = ".zip", ".tgz", ".tar.gz", ".exe"
 
     $release = Get-GitHubRelease @PSBoundParameters
     Write-Verbose "found release $($release.tag_name) for $org/$repo"
 
-    # I'll expand this later, these open with `tar -xzf`
-    $format = "zip|tar.gz|tgz"
-    $asset = $release.assets.where{ $_.name -match $OS -and $_.name -match $Architecture -and $_.name -match $format }
+    $assets = $release.assets.where{ $_.name -match $OS -and $_.name -match $Architecture } |
+                    Select-Object *, @{ Name = "Extension"; Expr = { $_.name -replace '^[^.]+$','' -replace ".*?((?:\.tar)?\.[^.]+$)",'$1' } } |
+                    Select-Object *, @{ Name = "Priority";  Expr = { if (($index = [array]::IndexOf($extension, $_.Extension)) -lt 0) { $index * -10 } else { $index } } } |
+                    Sort-Object Priority, Name
 
-    if ($asset.Count -gt 1) {
-        Write-Warning "Found multiple assets for $OS/$Architecture/$format, using $($asset[0].name)"
-        $asset | Format-List name, browser_download_url | Out-String | Write-Verbose
-        $asset = $asset[0]
-    } elseif ($asset.Count -eq 0) {
-        throw "No asset found for $OS/$Architecture/$format"
+    if ($assets.Count -gt 1) {
+        if ($asset = $assets.where({ $_.Extension -in $extension }, "First")) {
+            Write-Warning "Found multiple assets for $OS/$Architecture`n $($assets| Format-Table name, Extension, b*url | Out-String)`nUsing $($asset.name)"
+        # If it's not on windows, executables don't need an extesion
+        } elseif ($os -notmatch "windows" -and ($asset = $assets.Where({!$_.Extension},"First",0))) {
+            Write-Warning "Found multiple assets for $OS/$Architecture`n $($assets| Format-Table name, Extension, b*url | Out-String)`nUsing $($asset.name)"
+        } else {
+            throw "Found multiple assets for $OS/$Architecture`n $($assets| Format-Table name, Extension, b*url | Out-String)`nUnable to detect usable release."
+        }
+    } elseif ($assets.Count -eq 0) {
+        throw "No asset found for $OS/$Architecture`n $($release.assets.name -join "`n")"
+    } else {
+        $asset = $assets[0]
     }
 
     # Make a folder to unpack in
@@ -213,7 +253,7 @@ function Install-GitHubRelease {
     Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $asset.name -Verbose:$false
 
     # There might be a checksum file
-    $checksum = $release.assets.where{ $_.name -match "checksum" }[0]
+    $checksum = $release.assets.where{ $_.name -match "checksum|sha256sums" }[0]
     if ($checksum.Count -gt 0) {
         Write-Verbose "Found checksum file $($checksum.name)"
         Invoke-WebRequest -Uri $checksum.browser_download_url -OutFile $checksum.name -Verbose:$false
@@ -225,26 +265,36 @@ function Install-GitHubRelease {
         Write-Warning "No checksum file found for $($asset.name)"
     }
 
-    $File = Get-Item $asset.name
-    New-Item -Type Directory -Path $Repo | Convert-Path -OutVariable PackagePath | Set-Location
-    Write-Verbose "Extracting $File to $PackagePath"
-    tar -xzf $File.FullName
+    # If it's an archive, expand it
+    if ($asset.Extension -and $asset.Extension -ne ".exe") {
+        $File = Get-Item $asset.name
+        New-Item -Type Directory -Path $Repo | Convert-Path -OutVariable PackagePath | Set-Location
+        Write-Verbose "Extracting $File to $PackagePath"
 
-    Set-Location $tempdir
-
-    $Filter = if ($OS -match "windows") {
-        @{
-            Include = @($ENV:PATHEXT -replace '\.', '*.' -split ';') + '*.exe'
+        if ($asset.Extension -eq ".zip") {
+            Microsoft.PowerShell.Archive\Expand-Archive $File.FullName
+        } else {
+            if ($VerbosePreference -eq "Continue") {
+                tar -xzvf $File.FullName
+            } else {
+                tar -xzf $File.FullName
+            }
         }
+
+        Set-Location $tempdir
     } else {
-        @{
-            Exclude = '*.*'
-        }
+        Remove-Item $checksum.name
+        $PackagePath = $tempdir
+    }
+
+    $Filter = @{ }
+    if ($OS -match "windows") {
+        $Filter.Include = @($ENV:PATHEXT -replace '\.', '*.' -split ';') + '*.exe'
     }
 
     if (!(Test-Path $BinDir)) {
         # First time use of $BinDir
-        if ($Force -or $PSCmdlet.ShouldContinue("Created $BinDir", "Create $BinDir?", "$BinDir does not exist")) {
+        if ($Force -or $PSCmdlet.ShouldContinue("Create $BinDir and add to Path?", "$BinDir does not exist")) {
             New-Item -Type Directory -Path $BinDir | Out-Null
             if ($Env:PATH -split [IO.Path]::PathSeparator -notcontains $BinDir) {
                 $Env:PATH += [IO.Path]::PathSeparator + $BinDir
@@ -264,6 +314,21 @@ function Install-GitHubRelease {
 
     Write-Verbose "Moving files from $PackagePath"
     foreach ($File in Get-ChildItem $PackagePath -File -Recurse @Filter) {
+        # Some teams (e.g. earthly/earthly), name the actual binary with the platform name, which is annoying
+        if ($File.BaseName -match $OS -and $File.BaseName -match $Architecture ) {
+            # $File = Rename-Item $File.FullName -NewName "$Repo$($_.Extension)" -PassThru
+            if (!($NewName = ($File.BaseName -replace "[-_\.]*$OS" -replace "[-_\.]*$Architecture"))) {
+                $NewName = $Repo
+            }
+            $NewName += $File.Extension
+            Write-Warning "Renaming $File to $NewName"
+            $File = Rename-Item $File.FullName -NewName $NewName -PassThru
+        }
+        # Some few teams include the docs with their package (e.g. opentofu)
+        if ($File.BaseName -match "README|LICENSE|CHANGELOG" -or $File.Extension -in ".md", ".rst", ".txt", ".asc", ".doc" ) {
+            Write-Verbose "Skipping doc $File"
+            continue
+        }
         Write-Verbose "Moving $File to $BinDir"
 
         if ($OS -notmatch "windows" -and (Get-Item $BinDir).Attributes -eq "ReadOnly,Directory") {
