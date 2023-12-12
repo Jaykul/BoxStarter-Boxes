@@ -28,6 +28,10 @@
 
         Install `chezmoi` from the https://github.com/twpayne/chezmoi repository
     .EXAMPLE
+        Install-GitHubRelease mikefarah yq
+
+        Install `yq` from the https://github.com/mikefarah/yq repository
+    .EXAMPLE
         Install-GithubRelease sharkdp bat
         Install-GithubRelease sharkdp fd
 
@@ -37,7 +41,7 @@
 #>
 
 <#PSScriptInfo
-    .VERSION 1.2.0
+    .VERSION 1.3.0
 
     .GUID 802367c6-654a-450b-94db-87e1d52e020a
 
@@ -55,6 +59,7 @@
 
     .RELEASENOTES
 
+    - **1.3.0** Added support for mikefarah/yq, by supporting checksum files with multiple hashes (for different hash algorithms)
     - **1.2.0** Added support for .zip files on Linux
                 Also for checksum files based on the name "SHA256SUMS" instead of "checksums"
     - **1.1.0** Added support for directly downloading binaries (.exe on Windows, or no extension) to support earthly/earthly
