@@ -99,10 +99,10 @@ function Get-OSPlatform {
     }
     if ($Pattern) {
         Write-Information $OS
-        switch($OS) {
+        switch ($OS) {
             "windows" { "windows|(?<!dar)win" }
-            "linux"   { "linux|unix" }
-            "darwin"  { "darwin|osx" }
+            "linux" { "linux|unix" }
+            "darwin" { "darwin|osx" }
             "freebsd" { "freebsd" }
         }
     } else {
@@ -119,7 +119,7 @@ function Get-OSArchitecture {
     # PowerShell Core
     $Architecture = if (($arch = "$([Runtime.InteropServices.RuntimeInformation]::OSArchitecture)")) {
         $arch
-    # Legacy Windows PowerShell
+        # Legacy Windows PowerShell
     } elseif ([Environment]::Is64BitOperatingSystem) {
         "X64";
     } else {
@@ -128,11 +128,11 @@ function Get-OSArchitecture {
     # Optionally, turn this into a regex pattern that usually works
     if ($Pattern) {
         Write-Information $arch
-        switch($arch) {
-            "Arm"   { "arm(?!64)" }
+        switch ($arch) {
+            "Arm" { "arm(?!64)" }
             "Arm64" { "arm64" }
-            "X86"   { "x86|386" }
-            "X64"   { "amd64|x64|x86_64" }
+            "X86" { "x86|386" }
+            "X64" { "amd64|x64|x86_64" }
         }
     } else {
         $arch
@@ -142,23 +142,23 @@ function Get-OSArchitecture {
 function Get-GitHubRelease {
     [CmdletBinding()]
     param(
-        [Parameter(Position=0)]
+        [Parameter(Position = 0)]
         [Alias("User")]
         [string]$Org,
 
-        [Parameter(Position=1)]
+        [Parameter(Position = 1)]
         [string]$Repo,
 
-        [Parameter(Position=2)]
+        [Parameter(Position = 2)]
         [string]$Tag = 'latest'
     )
 
     Write-Debug "Checking GitHub for tag '$tag'"
 
     $result = if ($tag -eq 'latest') {
-        Invoke-RestMethod "https://api.github.com/repos/$org/$repo/releases/$tag" -Headers @{Accept = 'application/json'} -Verbose:$false
+        Invoke-RestMethod "https://api.github.com/repos/$org/$repo/releases/$tag" -Headers @{Accept = 'application/json' } -Verbose:$false
     } else {
-        Invoke-RestMethod "https://api.github.com/repos/$org/$repo/releases/tags/$tag" -Headers @{Accept = 'application/json'} -Verbose:$false
+        Invoke-RestMethod "https://api.github.com/repos/$org/$repo/releases/tags/$tag" -Headers @{Accept = 'application/json' } -Verbose:$false
     }
 
     Write-Debug "Found tag '$($result.tag_name)' for $tag"
@@ -166,10 +166,24 @@ function Get-GitHubRelease {
 }
 
 function Test-FileHash {
+    <#
+        .SYNOPSIS
+            Test the hash of a file against one or more checksum files or strings
+        .DESCRIPTION
+            Checksum files are assumed to have one line per file name, with the hash (or multiple hashes) on the line following the file name.
+
+            In order to support installing yq (which has a checksum file with multiple hashes), this function handles checksum files with an ARRAY of valid checksums for each file name by searching the array for any matching hash.
+
+            This isn't great, but an accidental pass is almost inconceivable, and determining the hash order is too complicated (given only one weird project does this so far).
+    #>
+    [OutputType([bool])]
     [CmdletBinding()]
     param(
+        # The path to the file to check the hash of
         [string]$Target,
-        [string]$Checksum
+
+        # The hash(es) or checksum(s) to compare to (can be one or more files, or one or more hash strings)
+        [string[]]$Checksum
     )
 
     # If Checksum is a file, get the checksum from the file
@@ -180,11 +194,13 @@ function Test-FileHash {
     }
 
     $Actual = (Get-FileHash -LiteralPath $Target -Algorithm SHA256).Hash
-    $Actual -eq $Checksum
-    if ($Actual -ne $Checksum) {
-        Write-Error "Checksum mismatch!`nExpected: $Checksum`nActual: $Actual"
-    } else {
+    # Supports checksum files with an ARRAY of valid checksums (for different hash algorithms)
+    # ... by searching the array for any matching hash (an accidental pass is almost inconceivable).
+    [bool]($Checksum -eq $Actual)
+    if ($Checksum -eq $Actual) {
         Write-Verbose "Checksum matches $Actual"
+    } else {
+        Write-Error "Checksum mismatch!`nValid: $Checksum`nActual: $Actual"
     }
 }
 
@@ -225,15 +241,15 @@ function Install-GitHubRelease {
     Write-Verbose "found release $($release.tag_name) for $org/$repo"
 
     $assets = $release.assets.where{ $_.name -match $OS -and $_.name -match $Architecture } |
-                    Select-Object *, @{ Name = "Extension"; Expr = { $_.name -replace '^[^.]+$','' -replace ".*?((?:\.tar)?\.[^.]+$)",'$1' } } |
-                    Select-Object *, @{ Name = "Priority";  Expr = { if (($index = [array]::IndexOf($extension, $_.Extension)) -lt 0) { $index * -10 } else { $index } } } |
-                    Sort-Object Priority, Name
+        Select-Object *, @{ Name = "Extension"; Expr = { $_.name -replace '^[^.]+$', '' -replace ".*?((?:\.tar)?\.[^.]+$)", '$1' } } |
+        Select-Object *, @{ Name = "Priority"; Expr = { if (($index = [array]::IndexOf($extension, $_.Extension)) -lt 0) { $index * -10 } else { $index } } } |
+        Sort-Object Priority, Name
 
     if ($assets.Count -gt 1) {
         if ($asset = $assets.where({ $_.Extension -in $extension }, "First")) {
             Write-Warning "Found multiple assets for $OS/$Architecture`n $($assets| Format-Table name, Extension, b*url | Out-String)`nUsing $($asset.name)"
-        # If it's not on windows, executables don't need an extesion
-        } elseif ($os -notmatch "windows" -and ($asset = $assets.Where({!$_.Extension},"First",0))) {
+            # If it's not on windows, executables don't need an extesion
+        } elseif ($os -notmatch "windows" -and ($asset = $assets.Where({ !$_.Extension }, "First", 0))) {
             Write-Warning "Found multiple assets for $OS/$Architecture`n $($assets| Format-Table name, Extension, b*url | Out-String)`nUsing $($asset.name)"
         } else {
             throw "Found multiple assets for $OS/$Architecture`n $($assets| Format-Table name, Extension, b*url | Out-String)`nUnable to detect usable release."
