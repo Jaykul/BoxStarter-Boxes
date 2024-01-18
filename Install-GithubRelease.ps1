@@ -41,7 +41,7 @@
 #>
 
 <#PSScriptInfo
-    .VERSION 1.3.0
+    .VERSION 1.3.1
 
     .GUID 802367c6-654a-450b-94db-87e1d52e020a
 
@@ -59,6 +59,7 @@
 
     .RELEASENOTES
 
+    - **1.3.1** Fixed the -BinDir parameter (and installing to hidden folders)
     - **1.3.0** Added support for mikefarah/yq, by supporting checksum files with multiple hashes (for different hash algorithms)
     - **1.2.0** Added support for .zip files on Linux
                 Also for checksum files based on the name "SHA256SUMS" instead of "checksums"
@@ -155,6 +156,7 @@ function Get-GitHubRelease {
         [string]$Repo,
 
         [Parameter(Position = 2)]
+        [Alias("Version")]
         [string]$Tag = 'latest'
     )
 
@@ -242,6 +244,10 @@ function Install-GitHubRelease {
     # A list of extensions in order of preference
     $extension = ".zip", ".tgz", ".tar.gz", ".exe"
 
+    $null = $PSBoundParameters.Remove("OS")
+    $null = $PSBoundParameters.Remove("Architecture")
+    $null = $PSBoundParameters.Remove("BinDir")
+
     $release = Get-GitHubRelease @PSBoundParameters
     Write-Verbose "found release $($release.tag_name) for $org/$repo"
 
@@ -252,12 +258,12 @@ function Install-GitHubRelease {
 
     if ($assets.Count -gt 1) {
         if ($asset = $assets.where({ $_.Extension -in $extension }, "First")) {
-            Write-Warning "Found multiple assets for $OS/$Architecture`n $($assets| Format-Table name, Extension, b*url | Out-String)`nUsing $($asset.name)"
+            Write-Warning "Found multiple available downloands for $OS/$Architecture`n $($assets| Format-Table name, Extension, b*url | Out-String)`nUsing $($asset.name)"
             # If it's not on windows, executables don't need an extesion
         } elseif ($os -notmatch "windows" -and ($asset = $assets.Where({ !$_.Extension }, "First", 0))) {
-            Write-Warning "Found multiple assets for $OS/$Architecture`n $($assets| Format-Table name, Extension, b*url | Out-String)`nUsing $($asset.name)"
+            Write-Warning "Found multiple available downloands for $OS/$Architecture`n $($assets| Format-Table name, Extension, b*url | Out-String)`nUsing $($asset.name)"
         } else {
-            throw "Found multiple assets for $OS/$Architecture`n $($assets| Format-Table name, Extension, b*url | Out-String)`nUnable to detect usable release."
+            throw "Found multiple available downloands for $OS/$Architecture`n $($assets| Format-Table name, Extension, b*url | Out-String)`nUnable to detect usable release."
         }
     } elseif ($assets.Count -eq 0) {
         throw "No asset found for $OS/$Architecture`n $($release.assets.name -join "`n")"
@@ -352,16 +358,16 @@ function Install-GitHubRelease {
         }
         Write-Verbose "Moving $File to $BinDir"
 
-        if ($OS -notmatch "windows" -and (Get-Item $BinDir).Attributes -eq "ReadOnly,Directory") {
+        if ($OS -notmatch "windows" -and (Get-Item $BinDir -Force).Attributes -eq "ReadOnly,Directory") {
             sudo mv -f $File.FullName $BinDir
             sudo chmod +x "$BinDir/$($File.Name)"
         } else {
             if (Test-Path $BinDir/$($File.Name)) {
                 Remove-Item $BinDir/$($File.Name) -Recurse -Force
             }
-            Move-Item $File.FullName -Destination $BinDir -Force -ErrorAction Stop
+            $Executable = Move-Item $File.FullName -Destination $BinDir -Force -ErrorAction Stop -PassThru
             if ($OS -notmatch "windows") {
-                chmod +x "$BinDir/$($File.Name)"
+                chmod +x $Executable.FullName
             }
         }
     }
