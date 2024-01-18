@@ -41,7 +41,7 @@
 #>
 
 <#PSScriptInfo
-    .VERSION 1.3.1
+    .VERSION 1.3.2
 
     .GUID 802367c6-654a-450b-94db-87e1d52e020a
 
@@ -59,6 +59,7 @@
 
     .RELEASENOTES
 
+    - **1.3.2** Allow pasting user/repo as a single string
     - **1.3.1** Fixed the -BinDir parameter (and installing to hidden folders)
     - **1.3.0** Added support for mikefarah/yq, by supporting checksum files with multiple hashes (for different hash algorithms)
     - **1.2.0** Added support for .zip files on Linux
@@ -74,7 +75,7 @@ param(
     [string]$Org,
 
     # The name of the repository or project to download from
-    [Parameter(Mandatory)]
+    [Parameter()]
     [string]$Repo,
 
     # The version (tag) of the release to download. Defaults to 'latest' which is always the latest release.
@@ -148,11 +149,11 @@ function Get-OSArchitecture {
 function Get-GitHubRelease {
     [CmdletBinding()]
     param(
-        [Parameter(Position = 0)]
+        [Parameter(Mandatory, Position = 0)]
         [Alias("User")]
         [string]$Org,
 
-        [Parameter(Position = 1)]
+        [Parameter(Mandatory, Position = 1)]
         [string]$Repo,
 
         [Parameter(Position = 2)]
@@ -226,7 +227,7 @@ function Install-GitHubRelease {
         [string]$Org,
 
         # The name of the repository or project to download from
-        [Parameter(Mandatory)]
+        [Parameter()]
         [string]$Repo,
 
         # The version of the release to download. Defaults to 'latest'
@@ -244,11 +245,11 @@ function Install-GitHubRelease {
     # A list of extensions in order of preference
     $extension = ".zip", ".tgz", ".tar.gz", ".exe"
 
-    $null = $PSBoundParameters.Remove("OS")
-    $null = $PSBoundParameters.Remove("Architecture")
-    $null = $PSBoundParameters.Remove("BinDir")
+    if (!$Repo) {
+        $Org, $Repo = $Org.Split('/')
+    }
 
-    $release = Get-GitHubRelease @PSBoundParameters
+    $release = Get-GitHubRelease -Org $Org -Repo $Repo -Tag $Version
     Write-Verbose "found release $($release.tag_name) for $org/$repo"
 
     $assets = $release.assets.where{ $_.name -match $OS -and $_.name -match $Architecture } |
